@@ -1,0 +1,10 @@
+# Dependency trees — never committed. `node_modules` is the name every tool
+# resolves; in this checkout it is a junction onto `node_modules.dev`, which
+# holds the installed dev tree. See CONTRIBUTING.md, "Dev dependencies live in
+# `node_modules.dev`".
+node_modules/
+node_modules.dev/
+*.log
+.DS_Store
+Thumbs.db
+.workbuddy/

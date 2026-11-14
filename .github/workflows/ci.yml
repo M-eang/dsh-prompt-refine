@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      # Both halves of the declared range: a bare `22` may resolve below 22.19
+      # (making CI test a runtime the package refuses), and the `>=24` arm keeps
+      # the upper end of `engines` honest instead of assumed.
+      fail-fast: false
+      matrix:
+        node-version: ['22.19', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Smoke the built host bundle
+        # Loads the committed lib/index.js against a real filesystem and asserts
+        # the workspace layer grounds a call without ever reading a secret-shaped
+        # file. It runs AFTER the build so the artifact under test is the fresh
+        # one; before this step existed, the only script that exercised lib/ was
+        # un-invokable off the machine that wrote it.
+        run: npm run preflight
+      - name: Verify lib/ is committed and fresh
+        run: |
+          if ! git diff --quiet lib/; then
+            echo "::error::lib/ differs from the committed build — run 'npm run build' and commit before pushing"
+            git diff --stat lib/
+            exit 1
+          fi
